@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cari Jawaban Soal</title>
+<meta name="theme-color" content="#0b1020">
+<style>
+:root{
+  --bg:#0b1020; --card:rgba(255,255,255,.06); --card-b:rgba(255,255,255,.12);
+  --txt:#e8ecf8; --mute:#9aa6c7; --acc1:#22d3ee; --acc2:#8b5cf6;
+  --ok:#22c55e; --okd:#14532d; --bad:#ef4444; --badd:#7f1d1d; --warn:#f59e0b;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  min-height:100vh; color:var(--txt); background:var(--bg);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  line-height:1.5; overflow-x:hidden;
+}
+.bg{position:fixed;inset:0;z-index:-1;overflow:hidden}
+.bg i{position:absolute;border-radius:50%;filter:blur(90px);opacity:.45;animation:float 18s ease-in-out infinite}
+.bg i:nth-child(1){width:46vw;height:46vw;background:#3b82f6;left:-12vw;top:-14vw}
+.bg i:nth-child(2){width:40vw;height:40vw;background:#8b5cf6;right:-10vw;top:10vh;animation-delay:-6s}
+.bg i:nth-child(3){width:36vw;height:36vw;background:#06b6d4;left:25vw;bottom:-18vw;animation-delay:-11s}
+@keyframes float{50%{transform:translate(4vw,3vw) scale(1.1)}}
+
+.wrap{max-width:900px;margin:0 auto;padding:28px 16px 60px}
+header{text-align:center;margin-bottom:22px}
+h1{margin:0;font-size:clamp(26px,5vw,40px);letter-spacing:.3px;
+  background:linear-gradient(90deg,var(--acc1),var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--mute);margin:6px 0 12px}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:99px;font-size:13px;
+  background:var(--card);border:1px solid var(--card-b);backdrop-filter:blur(8px)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--warn);box-shadow:0 0 10px var(--warn)}
+.chip.ready .dot{background:var(--ok);box-shadow:0 0 10px var(--ok)}
+.chip.err .dot{background:var(--bad);box-shadow:0 0 10px var(--bad)}
+
+.glass{background:var(--card);border:1px solid var(--card-b);border-radius:20px;backdrop-filter:blur(14px);
+  box-shadow:0 10px 40px rgba(0,0,0,.35)}
+.search{padding:16px}
+textarea{width:100%;min-height:150px;max-height:55vh;resize:vertical;border:1px solid var(--card-b);border-radius:14px;
+  background:rgba(8,12,28,.7);color:var(--txt);padding:14px 16px;font:inherit;font-size:16px;outline:none;transition:.2s}
+textarea:focus{border-color:var(--acc1);box-shadow:0 0 0 3px rgba(34,211,238,.18)}
+textarea::placeholder{color:#6b7798}
+.row{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;align-items:center}
+.row .sp{flex:1}
+button{font:inherit;cursor:pointer;border:0;border-radius:12px;padding:11px 20px;font-weight:600;color:#fff;transition:.15s}
+.btn-main{background:linear-gradient(90deg,var(--acc1),var(--acc2));color:#041022;box-shadow:0 6px 20px rgba(34,211,238,.25)}
+.btn-main:hover{transform:translateY(-1px);filter:brightness(1.08)}
+.btn-main:disabled{opacity:.5;cursor:wait;transform:none}
+.btn-ghost{background:var(--card);border:1px solid var(--card-b);color:var(--txt)}
+.btn-ghost:hover{background:rgba(255,255,255,.12)}
+.hint{font-size:12.5px;color:var(--mute);margin-top:10px}
+kbd{background:rgba(255,255,255,.12);border-radius:5px;padding:0 6px;font-size:12px}
+
+.progress{height:4px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:14px}
+.progress b{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--acc1),var(--acc2));transition:width .3s}
+
+#out{margin-top:22px;display:grid;gap:14px}
+.info{color:var(--mute);font-size:14px;padding:0 4px}
+.info b{color:var(--txt)}
+.res{padding:18px;position:relative;animation:pop .35s ease both;border-left:5px solid var(--acc1)}
+.res.top{border-left-color:var(--ok);box-shadow:0 10px 40px rgba(34,197,94,.18)}
+.res.ai{border-left-color:var(--acc2);box-shadow:0 10px 40px rgba(139,92,246,.2)}
+@keyframes pop{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.badges{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.pct{font-weight:800;font-size:13px;padding:3px 11px;border-radius:99px;background:rgba(34,211,238,.15);color:var(--acc1);border:1px solid rgba(34,211,238,.35)}
+.pct.p100{background:rgba(34,197,94,.18);color:#4ade80;border-color:rgba(34,197,94,.5)}
+.pct.ai{background:rgba(139,92,246,.2);color:#c4b5fd;border-color:rgba(139,92,246,.5)}
+.tag{font-size:12px;color:var(--mute)}
+.q{white-space:pre-wrap;word-break:break-word;margin:0 0 10px;color:#d5dcf2}
+.opts{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:6px}
+.opts li{padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid transparent;word-break:break-word}
+.opts li.ok{background:rgba(34,197,94,.16);border-color:rgba(34,197,94,.55);color:#bbf7d0;font-weight:600}
+.opts li.ok::before{content:"✔ "}
+.ans{border-radius:12px;padding:12px 14px;background:linear-gradient(90deg,rgba(34,197,94,.2),rgba(34,211,238,.1));border:1px solid rgba(34,197,94,.45);
+  display:flex;gap:10px;align-items:flex-start}
+.ans .lbl{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#86efac;font-weight:700}
+.ans .val{font-size:17px;font-weight:700;word-break:break-word;white-space:pre-wrap}
+.ans .grow{flex:1}
+.ans + .ans{margin-top:8px}
+.copy{padding:6px 12px;font-size:12px;background:rgba(255,255,255,.12)}
+.copy:hover{background:rgba(255,255,255,.22)}
+.ai .ans{background:rgba(139,92,246,.14);border-color:rgba(139,92,246,.5)}
+.ai .ans .lbl{color:#c4b5fd}
+.empty{text-align:center;padding:30px 18px;color:var(--mute)}
+.empty .big{font-size:46px}
+.more{justify-self:center}
+
+footer{margin-top:34px}
+.src{padding:14px 18px;font-size:13.5px;color:var(--mute);display:flex;gap:6px 18px;flex-wrap:wrap;justify-content:space-between}
+.src b{color:var(--txt)}
+
+/* popup */
+.ov{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(3,6,18,.72);backdrop-filter:blur(5px)}
+.ov.show{display:flex;animation:fade .2s ease}
+@keyframes fade{from{opacity:0}}
+.pop{width:min(520px,100%);border-radius:26px;padding:34px 26px 26px;text-align:center;color:#fff;animation:boom .45s cubic-bezier(.2,1.4,.4,1) both;border:2px solid rgba(255,255,255,.35)}
+.pop.good{background:linear-gradient(160deg,#16a34a,#065f2c);box-shadow:0 0 70px rgba(34,197,94,.55)}
+.pop.bad{background:linear-gradient(160deg,#dc2626,#7f1d1d);box-shadow:0 0 70px rgba(239,68,68,.55)}
+@keyframes boom{from{transform:scale(.6) rotate(-3deg);opacity:0}}
+.pop .ico{font-size:68px;line-height:1;animation:bounce 1s ease infinite}
+@keyframes bounce{50%{transform:translateY(-8px) scale(1.06)}}
+.pop h2{margin:14px 0 4px;font-size:clamp(20px,4.6vw,27px);line-height:1.3;letter-spacing:.5px}
+.pop p{margin:6px 0 0;opacity:.9;font-size:14px}
+.pop button{margin-top:20px;background:#fff;color:#111;padding:10px 30px}
+.pop.good button{color:#065f2c}.pop.bad button{color:#7f1d1d}
+
+/* modal ai */
+.modal{width:min(480px,100%);padding:24px;border-radius:20px;background:#121936;border:1px solid var(--card-b)}
+.modal h3{margin:0 0 4px}
+.modal label{display:block;margin:14px 0 5px;font-size:13px;color:var(--mute)}
+.modal input,.modal select{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--card-b);background:rgba(8,12,28,.8);color:var(--txt);font:inherit;outline:none}
+.modal small{display:block;color:var(--mute);margin-top:12px;font-size:12px}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:rot .7s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes rot{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="bg"><i></i><i></i><i></i></div>
+
+<div class="wrap">
+  <header>
+    <h1>🔎 Cari Jawaban Soal</h1>
+    <p class="sub">Tempel soal di kotak atas — jawaban langsung muncul dari database Excel.</p>
+    <span class="chip" id="status"><span class="dot"></span><span id="statusTxt">Memuat data…</span></span>
+    <div class="progress" id="prog"><b id="progBar"></b></div>
+  </header>
+
+  <section class="glass search">
+    <textarea id="q" placeholder="Tempel atau ketik soal di sini (boleh beserta pilihan jawabannya)…" autofocus spellcheck="false"></textarea>
+    <div class="row">
+      <button class="btn-main" id="go">🔍 Cari Jawaban</button>
+      <button class="btn-ghost" id="clr">✖ Bersihkan</button>
+      <span class="sp"></span>
+      <button class="btn-ghost" id="aiBtn" title="Pengaturan referensi AI">🤖 Referensi AI</button>
+    </div>
+    <div class="hint">Hasil muncul otomatis saat mengetik. Tekan <kbd>Ctrl</kbd>+<kbd>Enter</kbd> atau tombol Cari untuk pop-up hasil. Format “Question 5 / Select one: a. b. c.” otomatis dibersihkan.</div>
+  </section>
+
+  <section id="out"></section>
+
+  <footer>
+    <div class="glass src">
+      <span>📚 Sumber data: <b id="srcName">—</b></span>
+      <span>Jumlah soal unik: <b id="srcN">—</b></span>
+      <span>Dibangun: <b id="srcDate">—</b></span>
+      <span>Referensi AI: <b id="srcAi">belum aktif</b></span>
+    </div>
+  </footer>
+</div>
+
+<!-- popup hasil -->
+<div class="ov" id="ov"><div class="pop" id="pop">
+  <div class="ico" id="popIco"></div><h2 id="popTxt"></h2><p id="popSub"></p>
+  <button id="popOk">OK</button>
+</div></div>
+
+<!-- pengaturan AI -->
+<div class="ov" id="ov2"><div class="modal">
+  <h3>🤖 Referensi AI</h3>
+  <div class="tag">Dipakai hanya jika soal tidak ditemukan di Excel.</div>
+  <label>Penyedia</label>
+  <select id="aiProv"><option value="gemini">Google Gemini</option><option value="claude">Anthropic Claude</option></select>
+  <label>API Key</label>
+  <input id="aiKey" type="password" placeholder="Tempel API key" autocomplete="off">
+  <label>Model</label>
+  <input id="aiModel" placeholder="gemini-2.5-flash">
+  <small>Kunci disimpan hanya di browser perangkat ini (localStorage). Jangan menaruh kunci di dalam kode / repo GitHub.</small>
+  <div class="row"><button class="btn-main" id="aiSave">Simpan</button><button class="btn-ghost" id="aiOff">Matikan AI</button><span class="sp"></span><button class="btn-ghost" id="aiClose">Tutup</button></div>
+</div></div>
+
+<script>
+'use strict';
+/* ====================== KONFIGURASI ====================== */
+const DATA = 'data/';
+const MIN_SCORE = 0.70;   // di bawah ini dianggap tidak ada
+const POOL = 40;          // jumlah kandidat yang dinilai ulang
+const SHOW_FIRST = 20;    // jumlah kotak awal yang ditampilkan
+const MSG_OK  = 'ONOK IKI JAWABANE DI WOCO SEK YA WEDI SALAH';
+const MSG_BAD = 'GAK ENEK OJOK MOKSO PICEK TA MATAMU WKWKWK!!!!MAKANE BELAJAR!! BEN PINTER';
+const AI_DEFAULT = { gemini: 'gemini-2.5-flash', claude: 'claude-haiku-5-5' };
+
+/* ====================== UTIL ====================== */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const tokenize = s => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().split(' ').filter(Boolean);
+function fnv(s, h){ for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619) >>> 0; return h; }
+const sortedKey = toks => [...toks].sort().join(' ');
+
+async function fetchGz(url){
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(url + ' → HTTP ' + r.status);
+  let buf = new Uint8Array(await r.arrayBuffer());
+  if (buf[0] === 0x1f && buf[1] === 0x8b){
+    if (typeof DecompressionStream === 'undefined') throw new Error('Browser terlalu lama — perbarui Chrome/Edge/Safari.');
+    const ds = new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'));
+    buf = new Uint8Array(await new Response(ds).arrayBuffer());
+  }
+  return buf;
+}
+
+/* ====================== MUAT DATA ====================== */
+let META, N, BLOCK, hashB, nidx, offs, post, vocabMap, exactMap;
+const blockCache = new Map();
+let readyResolve; const ready = new Promise(r => readyResolve = r);
+
+async function loadAll(){
+  const bar = $('progBar');
+  try{
+    META = await (await fetch(DATA + 'meta.json')).json();
+    bar.style.width = '10%';
+    const [idx, voc] = await Promise.all([fetchGz(DATA + 'index.bin.gz'), fetchGz(DATA + 'vocab.txt.gz')]);
+    bar.style.width = '70%';
+    const ab = idx.buffer, dv = new DataView(ab, idx.byteOffset);
+    if (dv.getUint32(0, true) !== 0x43534F4C) throw new Error('Format indeks tidak dikenal');
+    N = dv.getUint32(4, true); const V = dv.getUint32(8, true); BLOCK = dv.getUint32(12, true); const plen = dv.getUint32(16, true);
+    let o = 20 + idx.byteOffset;
+    const hashA = new Uint32Array(ab, o, N); o += 4 * N;
+    hashB = new Uint32Array(ab, o, N); o += 4 * N;
+    nidx = new Uint16Array(ab, o, N); o += 2 * N + (N % 2 ? 2 : 0);
+    offs = new Uint32Array(ab, o, V + 1); o += 4 * (V + 1);
+    post = new Uint8Array(ab, o, plen);
+    const vocab = new TextDecoder().decode(voc).split('\n');
+    vocabMap = new Map(); for (let i = 0; i < vocab.length; i++) vocabMap.set(vocab[i], i);
+    exactMap = new Map();
+    for (let i = 0; i < N; i++){ const k = hashA[i]; const l = exactMap.get(k); if (l) l.push(i); else exactMap.set(k, [i]); }
+    bar.style.width = '100%'; setTimeout(() => $('prog').style.display = 'none', 400);
+    $('status').className = 'chip ready'; $('statusTxt').textContent = 'Siap · ' + N.toLocaleString('id-ID') + ' soal';
+    $('srcName').textContent = META.source; $('srcN').textContent = N.toLocaleString('id-ID'); $('srcDate').textContent = META.built;
+    readyResolve(true);
+  }catch(e){
+    console.error(e);
+    $('status').className = 'chip err'; $('statusTxt').textContent = 'Gagal memuat data: ' + e.message;
+    $('prog').style.display = 'none';
+    readyResolve(false);
+  }
+}
+
+async function getBlock(n){
+  if (!blockCache.has(n)){
+    blockCache.set(n, fetchGz(DATA + 'b' + n + '.json.gz').then(b => JSON.parse(new TextDecoder().decode(b))));
+  }
+  return blockCache.get(n);
+}
+async function getEntries(ids){
+  const need = [...new Set(ids.map(i => Math.floor(i / BLOCK)))];
+  const bl = await Promise.all(need.map(getBlock));
+  const m = new Map(need.map((n, i) => [n, bl[i]]));
+  return ids.map(id => { const e = m.get(Math.floor(id / BLOCK))[id % BLOCK]; return { id, q: e[0], answers: e.slice(1) }; });
+}
+
+/* ====================== PEMBERSIH TEKS TEMPELAN ====================== */
+function cleanQuery(t){
+  t = t.replace(/\r/g, '').replace(/\u00a0/g, ' ');
+  t = t.replace(/(the\s+correct\s+answers?\s+(is|are)|jawaban\s+(yang\s+)?(benar|tepat)\s+(adalah|ialah)|right\s+answers?\s*:|correct\s+answer\s*:|kunci\s+jawaban)[\s\S]*$/i, ' ');
+  t = t.replace(/(^|\s)(question|pertanyaan)\s*\d+/gi, ' ');
+  t = t.replace(/not yet answered|belum dijawab|answer saved|marked out of\s*[\d.,]+|points? out of\s*[\d.,]+|flag question|remove flag|tandai pertanyaan|nilai maksimal\s*[\d.,]+/gi, ' ');
+  t = t.replace(/select one( or more)?\s*:?|pilih satu( atau lebih)?\s*:?|pilih salah satu\s*:?/gi, ' ');
+  t = t.replace(/(^|\n)\s*[a-eA-E][\.\)]\s+/g, '\n');
+  return t;
+}
+
+/* ====================== PENCARIAN ====================== */
+const counts = () => counts._c || (counts._c = new Uint16Array(N));
+function scoreOf(qTok, eTok){
+  const m = new Map(); for (const t of eTok) m.set(t, (m.get(t) || 0) + 1);
+  let inter = 0;
+  for (const t of qTok){ const c = m.get(t); if (c) { inter++; m.set(t, c - 1); } }
+  const nq = qTok.length, ne = eTok.length;
+  const dice = 2 * inter / (nq + ne);
+  const cont = inter / nq;
+  const factor = nq >= 8 ? 0.99 : nq >= 4 ? 0.9 : 0.75;
+  return { score: Math.max(dice, cont * factor), dice };
+}
+
+async function search(raw){
+  const qTok = tokenize(cleanQuery(raw));
+  if (!qTok.length) return { mode: 'empty', items: [] };
+
+  // 1) kecocokan 100% (isi kata sama persis, urutan pilihan boleh beda)
+  const key = sortedKey(qTok);
+  const cand = exactMap.get(fnv(key, 0x811C9DC5));
+  if (cand){
+    const hb = fnv(key, 0x9747B28C);
+    const ids = cand.filter(i => hashB[i] === hb);
+    if (ids.length){
+      const ents = (await getEntries(ids)).filter(e => sortedKey(tokenize(e.q)) === key);
+      if (ents.length) return { mode: 'exact', items: ents.map(e => ({ ...e, score: 1 })), total: ents.length };
+    }
+  }
+
+  // 2) kandidat dari indeks kata
+  const set = new Set(); for (const t of qTok){ const id = vocabMap.get(t); if (id !== undefined) set.add(id); }
+  const nqi = set.size; if (!nqi) return { mode: 'none', items: [], total: 0 };
+  const c = counts(), touched = [];
+  for (const id of set){
+    let p = offs[id]; const end = offs[id + 1]; let cur = 0;
+    while (p < end){
+      let b = post[p++], v = b & 127, s = 7;
+      while (b & 128){ b = post[p++]; v |= (b & 127) << s; s += 7; }
+      cur += v;
+      if (c[cur]++ === 0) touched.push(cur);
+    }
+  }
+  const need = nqi <= 3 ? nqi : Math.ceil(nqi * 0.5);
+  const ranked = [];
+  for (const id of touched){
+    const s = c[id]; c[id] = 0;
+    if (s < need) continue;
+    ranked.push([Math.max(2 * s / (nqi + nidx[id]), 0.9 * s / nqi), id]);
+  }
+  ranked.sort((a, b) => b[0] - a[0]);
+  const top = ranked.slice(0, POOL).map(r => r[1]);
+  if (!top.length) return { mode: 'none', items: [], total: 0 };
+
+  // 3) nilai ulang kandidat secara teliti
+  const ents = await getEntries(top);
+  const scored = ents.map(e => ({ ...e, ...scoreOf(qTok, tokenize(e.q)) })).filter(e => e.score >= MIN_SCORE);
+  scored.sort((a, b) => b.score - a.score || b.dice - a.dice);
+  if (!scored.length) return { mode: 'none', items: [], total: 0 };
+  if (scored[0].score >= 0.9999) { const ex = scored.filter(e => e.score >= 0.9999); return { mode: 'exact', items: ex, total: ex.length }; }
+  return { mode: 'similar', items: scored, total: scored.length };
+}
+
+/* ====================== TAMPILAN HASIL ====================== */
+function splitQ(q){
+  const semi = q.indexOf('; ');
+  if (semi > 0){
+    const col = q.lastIndexOf(': ', semi);
+    if (col > 0) return { stem: q.slice(0, col + 1), opts: q.slice(col + 2).split('; ') };
+  }
+  return { stem: q, opts: [] };
+}
+const normA = s => tokenize(s).join(' ');
+
+function card(it, idx){
+  const { stem, opts } = splitQ(it.q);
+  const ansN = new Set(it.answers.map(normA));
+  const pct = Math.floor(it.score * 100 + (it.score >= 0.9999 ? 1e-9 : 0));
+  const p100 = it.score >= 0.9999;
+  const optsHtml = opts.length ? '<ul class="opts">' + opts.map(o => '<li class="' + (ansN.has(normA(o)) ? 'ok' : '') + '">' + esc(o) + '</li>').join('') + '</ul>' : '';
+  const ansHtml = it.answers.map((a, i) => '<div class="ans"><div class="grow"><div class="lbl">Jawaban' + (it.answers.length > 1 ? ' ' + (i + 1) : '') + '</div><div class="val">' + esc(a) + '</div></div><button class="copy" data-copy="' + esc(a) + '">Salin</button></div>').join('');
+  return '<article class="glass res' + (idx === 0 ? ' top' : '') + '">' +
+    '<div class="badges"><span class="pct' + (p100 ? ' p100' : '') + '">' + pct + '% mirip</span>' +
+    (idx === 0 ? '<span class="tag">⭐ paling mirip</span>' : '<span class="tag">#' + (idx + 1) + '</span>') + '</div>' +
+    '<p class="q">' + esc(stem) + '</p>' + optsHtml + ansHtml + '</article>';
+}
+
+let lastResult = null, showAll = false;
+function render(res){
+  lastResult = res;
+  const out = $('out');
+  if (res.mode === 'empty'){ out.innerHTML = ''; return; }
+  if (res.mode === 'none'){
+    out.innerHTML = '<div class="glass empty"><div class="big">🤷</div><p><b>Tidak ditemukan di Excel</b><br>Tidak ada soal yang mirip ≥ ' + Math.round(MIN_SCORE * 100) + '%.</p>' +
+      '<button class="btn-ghost" id="askAi">🤖 Tanya Referensi AI</button></div><div id="aiOut"></div>';
+    $('askAi').onclick = () => runAI();
+    return;
+  }
+  const items = showAll ? res.items : res.items.slice(0, SHOW_FIRST);
+  let html = '<div class="info">' + (res.mode === 'exact'
+      ? '✅ Ditemukan <b>100% sama</b> — hanya menampilkan jawaban yang cocok.'
+      : '🟢 Tidak ada yang 100% sama. Menampilkan <b>' + res.total + '</b> soal paling mirip (urut dari yang tertinggi).') + '</div>';
+  html += items.map(card).join('');
+  if (!showAll && res.items.length > SHOW_FIRST) html += '<button class="btn-ghost more" id="more">Tampilkan semua (' + res.items.length + ')</button>';
+  html += '<div id="aiOut"></div>';
+  out.innerHTML = html;
+  if ($('more')) $('more').onclick = () => { showAll = true; render(res); };
+}
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-copy]'); if (!b) return;
+  navigator.clipboard.writeText(b.dataset.copy).then(() => { const t = b.textContent; b.textContent = 'Tersalin ✓'; setTimeout(() => b.textContent = t, 1200); });
+});
+
+/* ====================== POP-UP ====================== */
+let popT;
+function popup(found, sub){
+  const pop = $('pop');
+  pop.className = 'pop ' + (found ? 'good' : 'bad');
+  $('popIco').textContent = found ? '✅' : '❌';
+  $('popTxt').textContent = found ? MSG_OK : MSG_BAD;
+  $('popSub').textContent = sub || '';
+  $('ov').classList.add('show');
+  clearTimeout(popT); popT = setTimeout(closePop, 6000);
+}
+function closePop(){ $('ov').classList.remove('show'); }
+$('popOk').onclick = closePop;
+$('ov').addEventListener('click', e => { if (e.target === $('ov')) closePop(); });
+
+/* ====================== AI ====================== */
+const getAi = () => { try { return JSON.parse(localStorage.getItem('cs_ai') || 'null'); } catch (e) { return null; } };
+function refreshAiLabel(){ const c = getAi(); $('srcAi').textContent = c && c.key ? (c.provider === 'claude' ? 'Claude' : 'Gemini') + ' · aktif' : 'belum aktif'; }
+$('aiBtn').onclick = () => {
+  const c = getAi() || { provider: 'gemini', key: '', model: '' };
+  $('aiProv').value = c.provider; $('aiKey').value = c.key; $('aiModel').value = c.model || '';
+  $('aiModel').placeholder = AI_DEFAULT[c.provider]; $('ov2').classList.add('show');
+};
+$('aiProv').onchange = () => { $('aiModel').placeholder = AI_DEFAULT[$('aiProv').value]; };
+$('aiClose').onclick = () => $('ov2').classList.remove('show');
+$('aiSave').onclick = () => { localStorage.setItem('cs_ai', JSON.stringify({ provider: $('aiProv').value, key: $('aiKey').value.trim(), model: $('aiModel').value.trim() })); refreshAiLabel(); $('ov2').classList.remove('show'); };
+$('aiOff').onclick = () => { localStorage.removeItem('cs_ai'); refreshAiLabel(); $('ov2').classList.remove('show'); };
+
+async function callAI(prompt){
+  const c = getAi(); if (!c || !c.key) throw new Error('NOKEY');
+  const model = c.model || AI_DEFAULT[c.provider];
+  const sys = 'Kamu asisten yang menjawab soal pilihan ganda pelatihan karyawan minimarket (Alfamart/Alfamidi). Pilih jawaban yang paling tepat dari pilihan yang diberikan. Jawab singkat: tulis teks jawaban yang dipilih, lalu satu kalimat alasan. Jika ragu, katakan ragu. Jawab dalam Bahasa Indonesia.';
+  if (c.provider === 'claude'){
+    const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-api-key': c.key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model, max_tokens: 500, system: sys, messages: [{ role: 'user', content: prompt }] }) });
+    const j = await r.json(); if (!r.ok) throw new Error((j.error && j.error.message) || 'HTTP ' + r.status);
+    return j.content.map(x => x.text || '').join('').trim();
+  }
+  const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent', { method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-goog-api-key': c.key },
+    body: JSON.stringify({ systemInstruction: { parts: [{ text: sys }] }, contents: [{ role: 'user', parts: [{ text: prompt }] }] }) });
+  const j = await r.json(); if (!r.ok) throw new Error((j.error && j.error.message) || 'HTTP ' + r.status);
+  return ((j.candidates || [])[0].content.parts || []).map(x => x.text || '').join('').trim();
+}
+
+async function runAI(){
+  const box = $('aiOut'); if (!box) return;
+  const raw = cleanQuery($('q').value).replace(/\n{2,}/g, '\n').trim();
+  if (!getAi() || !getAi().key){
+    box.innerHTML = '<div class="glass empty"><p>Referensi AI belum diaktifkan.</p><button class="btn-main" id="openAi">🤖 Aktifkan sekarang</button></div>';
+    $('openAi').onclick = () => $('aiBtn').click(); return;
+  }
+  box.innerHTML = '<div class="glass res ai"><span class="spin"></span>AI sedang berpikir…</div>';
+  try{
+    const txt = await callAI('Soal:\n' + raw);
+    box.innerHTML = '<article class="glass res ai"><div class="badges"><span class="pct ai">🤖 Referensi AI</span><span class="tag">bukan dari Excel — cek lagi sebelum dipakai</span></div>' +
+      '<div class="ans"><div class="grow"><div class="lbl">Saran AI</div><div class="val">' + esc(txt) + '</div></div><button class="copy" data-copy="' + esc(txt) + '">Salin</button></div></article>';
+  }catch(e){
+    box.innerHTML = '<div class="glass empty"><p>Gagal memanggil AI: ' + esc(e.message) + '</p></div>';
+  }
+}
+
+/* ====================== KONTROL ====================== */
+let runId = 0, liveT;
+async function run(explicit){
+  const id = ++runId;
+  const raw = $('q').value;
+  if (!raw.trim()){ $('out').innerHTML = ''; return; }
+  const ok = await ready;
+  if (!ok){ if (explicit) popup(false, 'Data gagal dimuat — cek folder data/ di GitHub.'); return; }
+  $('go').disabled = true;
+  let res;
+  try{ res = await search(raw); }catch(e){ console.error(e); $('go').disabled = false; $('out').innerHTML = '<div class="glass empty"><p>Terjadi kesalahan: ' + esc(e.message) + '</p></div>'; return; }
+  if (id !== runId) return;
+  $('go').disabled = false;
+  showAll = false; render(res);
+  if (explicit){
+    const found = res.mode === 'exact' || res.mode === 'similar';
+    if (res.mode !== 'empty') popup(found, found ? (res.mode === 'exact' ? 'Cocok 100%' : 'Ada soal yang mirip, cek kotak paling atas') : '');
+    if (res.mode === 'none' && getAi() && getAi().key) runAI();
+  }
+}
+$('go').onclick = () => run(true);
+$('clr').onclick = () => { $('q').value = ''; $('out').innerHTML = ''; runId++; $('q').focus(); };
+$('q').addEventListener('input', () => { clearTimeout(liveT); liveT = setTimeout(() => run(false), 350); });
+$('q').addEventListener('paste', () => { setTimeout(() => { if ($('q').value.trim().length > 15){ clearTimeout(liveT); run(true); } }, 30); });
+$('q').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)){ e.preventDefault(); run(true); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape'){ closePop(); $('ov2').classList.remove('show'); } });
+
+refreshAiLabel();
+loadAll();
+</script>
+</body>
+</html>
